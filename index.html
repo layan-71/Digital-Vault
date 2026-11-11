@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Digital Vault | Personal Knowledge & File Organizer</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            DEFAULT: '#0F5257',
+                            dark: '#0B6E4F',
+                            light: '#E2F1EC',
+                            accent: '#198038'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 min-h-screen flex flex-col transition-colors duration-300">
+
+    <!-- Global Drag & Drop Overlay -->
+    <div id="drop-overlay" class="fixed inset-0 bg-brand/90 backdrop-blur-md z-50 hidden flex flex-col items-center justify-center text-white border-4 border-dashed border-white/40 m-4 rounded-3xl pointer-events-none">
+        <svg class="w-20 h-20 mb-4 animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
+        <h3 class="text-2xl font-bold">Drop File to Save Locally</h3>
+        <p class="text-sm opacity-80 mt-1">It will be indexed into your Digital Vault immediately</p>
+    </div>
+
+    <!-- Header -->
+    <header class="bg-white/80 dark:bg-slate-900/80 backdrop-blur-md shadow-sm border-b border-slate-200 dark:border-slate-800 sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <!-- شعار الموقع المخصص (Digital Vault Logo SVG) -->
+                <div class="w-11 h-11 bg-gradient-to-tr from-[#0F5257] to-[#0B6E4F] rounded-2xl flex items-center justify-center shadow-md shadow-brand/20 text-white">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="text-lg font-bold tracking-tight">Digital Vault</h1>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">Personal Knowledge & File Organizer</p>
+                </div>
+            </div>
+
+            <div class="flex items-center space-x-3">
+                <button onclick="toggleDarkMode()" class="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition" title="Toggle Theme">
+                    <svg id="theme-icon-light" class="w-5 h-5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+                    <svg id="theme-icon-dark" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
+                </button>
+
+                <button onclick="openModal('file')" class="bg-brand hover:bg-brand-dark text-white px-4 py-2.5 rounded-xl font-medium text-sm flex items-center space-x-2 shadow-md shadow-brand/20 transition">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                    <span>Upload File</span>
+                </button>
+                <button onclick="openModal('link')" class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 px-4 py-2.5 rounded-xl font-medium text-sm flex items-center space-x-2 transition">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg>
+                    <span>Add Link</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-grow w-full">
+
+        <!-- Analytics Overview -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                <div>
+                    <p class="text-xs text-slate-500 font-medium">Total Items</p>
+                    <h3 id="stat-total" class="text-2xl font-bold mt-1">0</h3>
+                </div>
+                <div class="w-12 h-12 bg-emerald-50 dark:bg-slate-800 rounded-xl flex items-center justify-center text-brand">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"></path></svg>
+                </div>
+            </div>
+
+            <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                <div>
+                    <p class="text-xs text-slate-500 font-medium">Starred Items</p>
+                    <h3 id="stat-favs" class="text-2xl font-bold text-amber-500 mt-1">0</h3>
+                </div>
+                <div class="w-12 h-12 bg-amber-50 dark:bg-slate-800 rounded-xl flex items-center justify-center text-amber-500">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"></path></svg>
+                </div>
+            </div>
+
+            <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                <div>
+                    <p class="text-xs text-slate-500 font-medium">Saved Links</p>
+                    <h3 id="stat-links" class="text-2xl font-bold text-blue-500 mt-1">0</h3>
+                </div>
+                <div class="w-12 h-12 bg-blue-50 dark:bg-slate-800 rounded-xl flex items-center justify-center text-blue-500">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"></path></svg>
+                </div>
+            </div>
+
+            <div class="bg-white dark:bg-slate-900 p-5 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                <div>
+                    <p class="text-xs text-slate-500 font-medium">Local Storage</p>
+                    <h3 id="stat-storage" class="text-2xl font-bold text-brand mt-1">0 KB</h3>
+                </div>
+                <div class="w-12 h-12 bg-emerald-50 dark:bg-slate-800 rounded-xl flex items-center justify-center text-brand">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4"></path></svg>
+                </div>
+            </div>
+        </div>
+
+        <!-- Controls Toolbar -->
+        <div class="bg-white dark:bg-slate-900 p-4 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 mb-6 flex flex-col md:flex-row gap-4 items-center justify-between">
+            <div class="relative w-full md:w-96">
+                <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-400">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                </span>
+                <input type="text" id="search-input" oninput="filterItems()" placeholder="Search titles, tags, or notes..." class="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand">
+            </div>
+
+            <div class="flex flex-wrap items-center gap-2 w-full md:w-auto justify-end">
+                <select id="filter-category" onchange="filterItems()" class="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand">
+                    <option value="all">All Categories</option>
+                    <option value="Documents">Documents</option>
+                    <option value="Research">Research</option>
+                    <option value="Code">Code & Scripts</option>
+                    <option value="Media">Media & Images</option>
+                    <option value="Links">Links & References</option>
+                </select>
+
+                <select id="filter-status" onchange="filterItems()" class="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand">
+                    <option value="all">All Statuses</option>
+                    <option value="To Read">To Read</option>
+                    <option value="In Progress">In Progress</option>
+                    <option value="Completed">Completed</option>
+                </select>
+
+                <select id="sort-select" onchange="filterItems()" class="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand">
+                    <option value="newest">Newest First</option>
+                    <option value="oldest">Oldest First</option>
+                    <option value="name">Alphabetical</option>
+                    <option value="size">File Size</option>
+                </select>
+
+                <button onclick="toggleFavoritesFilter()" id="fav-filter-btn" class="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-400 hover:text-amber-500 transition" title="Show Starred Only">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"></path></svg>
+                </button>
+
+                <div class="flex items-center bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
+                    <button onclick="setViewMode('grid')" id="grid-view-btn" class="p-1.5 rounded-lg bg-white dark:bg-slate-700 text-brand shadow-sm transition">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-6zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-6z"></path></svg>
+                    </button>
+                    <button onclick="setViewMode('list')" id="list-view-btn" class="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 transition">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Tags Filter Bar -->
+        <div id="quick-tags-container" class="flex items-center gap-2 overflow-x-auto pb-4 mb-2"></div>
+
+        <!-- Items Container -->
+        <div id="items-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+
+        <!-- Empty State -->
+        <div id="empty-state" class="hidden flex flex-col items-center justify-center py-16 text-center">
+            <div class="w-20 h-20 bg-emerald-50 dark:bg-slate-900 rounded-3xl flex items-center justify-center text-brand mb-4">
+                <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path></svg>
+            </div>
+            <h3 class="text-lg font-bold">No Items Found</h3>
+            <p class="text-sm text-slate-400 mt-1">Upload a file or add a reference link to get started.</p>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 py-6 mt-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <p class="text-xs text-slate-500">© 2026 Digital Vault — Local-first Client Storage Architecture.</p>
+            <div class="flex items-center space-x-3">
+                <button onclick="exportData()" class="text-xs bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 px-3 py-2 rounded-xl transition flex items-center space-x-1.5">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
+                    <span>Export JSON Backup</span>
+                </button>
+                <label class="text-xs bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 px-3 py-2 rounded-xl transition cursor-pointer flex items-center space-x-1.5">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                    <span>Import File</span>
+                    <input type="file" id="import-file-input" accept=".json" onchange="importData(event)" class="hidden">
+                </label>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Item Creation Modal -->
+    <div id="item-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-slate-900 rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-100 dark:border-slate-800">
+            <div class="flex items-center justify-between mb-6">
+                <h3 id="modal-title" class="text-lg font-bold">Add New Vault Item</h3>
+                <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+
+            <form id="item-form" onsubmit="handleFormSubmit(event)" class="space-y-4">
+                <input type="hidden" id="modal-type" value="file">
+                
+                <div id="file-input-container">
+                    <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Select File</label>
+                    <input type="file" id="file-upload" class="w-full text-sm text-slate-500 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-emerald-50 file:text-brand hover:file:bg-emerald-100 transition">
+                </div>
+
+                <div id="link-input-container" class="hidden">
+                    <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Resource URL</label>
+                    <input type="url" id="link-url" placeholder="https://..." class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Title</label>
+                    <input type="text" id="item-title" required placeholder="Descriptive title..." class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand">
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Category</label>
+                        <select id="item-category" class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand">
+                            <option value="Documents">Documents</option>
+                            <option value="Research">Research</option>
+                            <option value="Code">Code & Scripts</option>
+                            <option value="Media">Media & Images</option>
+                            <option value="Links">Links & References</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Reading Status</label>
+                        <select id="item-status" class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand">
+                            <option value="To Read">To Read</option>
+                            <option value="In Progress">In Progress</option>
+                            <option value="Completed">Completed</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Tags (comma separated)</label>
+                    <input type="text" id="item-tags" placeholder="cybersecurity, paper, draft" class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">Notes & Annotation</label>
+                    <textarea id="item-notes" rows="2" placeholder="Key takeaways..." class="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand"></textarea>
+                </div>
+
+                <div class="flex justify-end space-x-3 pt-4">
+                    <button type="button" onclick="closeModal()" class="px-5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-800 transition">Cancel</button>
+                    <button type="submit" class="px-5 py-2.5 rounded-xl bg-brand hover:bg-brand-dark text-white text-sm font-medium shadow-md shadow-brand/20 transition">Save Item</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Universal Viewer Modal -->
+    <div id="reader-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-slate-900 rounded-3xl max-w-3xl w-full p-6 shadow-2xl border border-slate-100 dark:border-slate-800 max-h-[85vh] flex flex-col">
+            <div class="flex items-center justify-between mb-4 pb-3 border-b border-slate-100 dark:border-slate-800">
+                <h3 id="reader-title" class="text-lg font-bold">Item Preview</h3>
+                <button onclick="closeReader()" class="text-slate-400 hover:text-slate-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            <div id="reader-container" class="flex-grow overflow-y-auto p-4 bg-slate-50 dark:bg-slate-950 rounded-2xl flex items-center justify-center">
+                <pre id="reader-text" class="w-full text-sm font-mono whitespace-pre-wrap hidden"></pre>
+                <img id="reader-image" class="max-w-full max-h-[60vh] object-contain rounded-xl hidden">
+                <iframe id="reader-frame" class="w-full h-[60vh] rounded-xl hidden border-0"></iframe>
+            </div>
+        </div>
+    </div>
+
+    <!-- Application Engine Logic -->
+    <script>
+        let db = null;
+        let itemsCache = [];
+        let viewMode = 'grid';
+        let onlyFavorites = false;
+        let activeTagFilter = null;
+
+        // Initialize IndexedDB Engine
+        const dbRequest = indexedDB.open('DigitalVaultGlobalDB', 1);
+        dbRequest.onerror = (e) => console.error("Database connection failed:", e.target.error);
+        dbRequest.onsuccess = (e) => {
+            db = e.target.result;
+            fetchVaultItems();
+        };
+        dbRequest.onupgradeneeded = (e) => {
+            const database = e.target.result;
+            if (!database.objectStoreNames.contains('vault')) {
+                database.createObjectStore('vault', { keyPath: 'id', autoIncrement: true });
+            }
+        };
+
+        // Theme Toggle
+        function toggleDarkMode() {
+            document.documentElement.classList.toggle('dark');
+            const isDark = document.documentElement.classList.contains('dark');
+            localStorage.setItem('vault_theme', isDark ? 'dark' : 'light');
+            updateThemeIcons(isDark);
+        }
+
+        function updateThemeIcons(isDark) {
+            document.getElementById('theme-icon-light').classList.toggle('hidden', !isDark);
+            document.getElementById('theme-icon-dark').classList.toggle('hidden', isDark);
+        }
+
+        if (localStorage.getItem('vault_theme') === 'dark' || (!localStorage.getItem('vault_theme') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            document.documentElement.classList.add('dark');
+            updateThemeIcons(true);
+        }
+
+        // Modal Controls
+        function openModal(type) {
+            document.getElementById('modal-type').value = type;
+            document.getElementById('modal-title').textContent = type === 'file' ? 'Upload New File' : 'Add Web Reference';
+            document.getElementById('file-input-container').classList.toggle('hidden', type !== 'file');
+            document.getElementById('link-input-container').classList.toggle('hidden', type !== 'link');
+            document.getElementById('item-form').reset();
+            document.getElementById('item-modal').classList.remove('hidden');
+        }
+
+        function closeModal() { document.getElementById('item-modal').classList.add('hidden'); }
+        function closeReader() { document.getElementById('reader-modal').classList.add('hidden'); }
+
+        // Fetch Vault Records
+        function fetchVaultItems() {
+            if (!db) return;
+            const tx = db.transaction(['vault'], 'readonly');
+            const store = tx.objectStore('vault');
+            const req = store.getAll();
+
+            req.onsuccess = (e) => {
+                itemsCache = e.target.result;
+                renderQuickTags();
+                updateStats();
+                filterItems();
+            };
+        }
+
+        function handleFormSubmit(e) {
+            e.preventDefault();
+            const type = document.getElementById('modal-type').value;
+            const title = document.getElementById('item-title').value;
+            const category = document.getElementById('item-category').value;
+            const status = document.getElementById('item-status').value;
+            const tags = document.getElementById('item-tags').value.split(',').map(t => t.trim()).filter(Boolean);
+            const notes = document.getElementById('item-notes').value;
+
+            if (type === 'link') {
+                const newItem = {
+                    type: 'link',
+                    title, category, status, tags, notes,
+                    url: document.getElementById('link-url').value,
+                    size: 0,
+                    isFavorite: false,
+                    createdAt: new Date().toISOString()
+                };
+                persistItem(newItem);
+            } else {
+                const fileInput = document.getElementById('file-upload');
+                if (!fileInput.files.length) return alert('Please select a file');
+                const file = fileInput.files[0];
+                const reader = new FileReader();
+                reader.onload = (evt) => {
+                    const newItem = {
+                        type: 'file',
+                        title: title || file.name,
+                        fileName: file.name,
+                        fileType: file.type,
+                        size: file.size,
+                        data: evt.target.result,
+                        category, status, tags, notes,
+                        isFavorite: false,
+                        createdAt: new Date().toISOString()
+                    };
+                    persistItem(newItem);
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function persistItem(item) {
+            const tx = db.transaction(['vault'], 'readwrite');
+            const store = tx.objectStore('vault');
+            const req = store.add(item);
+            req.onsuccess = () => {
+                closeModal();
+                fetchVaultItems();
+            };
+        }
+
+        function deleteItem(id) {
+            if (!confirm('Remove this item permanently?')) return;
+            const tx = db.transaction(['vault'], 'readwrite');
+            tx.objectStore('vault').delete(id).onsuccess = () => fetchVaultItems();
+        }
+
+        function toggleFavorite(id) {
+            const tx = db.transaction(['vault'], 'readwrite');
+            const store = tx.objectStore('vault');
+            const req = store.get(id);
+            req.onsuccess = () => {
+                const item = req.result;
+                item.isFavorite = !item.isFavorite;
+                store.put(item);
+                fetchVaultItems();
+            };
+        }
+
+        function updateItemStatus(id, newStatus) {
+            const tx = db.transaction(['vault'], 'readwrite');
+            const store = tx.objectStore('vault');
+            const req = store.get(id);
+            req.onsuccess = () => {
+                const item = req.result;
+                item.status = newStatus;
+                store.put(item);
+                fetchVaultItems();
+            };
+        }
+
+        // Tag Cloud Renderer
+        function renderQuickTags() {
+            const container = document.getElementById('quick-tags-container');
+            const allTags = new Set();
+            itemsCache.forEach(i => (i.tags || []).forEach(t => allTags.add(t)));
+            
+            container.innerHTML = '';
+            if (!allTags.size) return;
+
+            const allBtn = document.createElement('button');
+            allBtn.className = `text-xs px-3 py-1.5 rounded-xl border transition whitespace-nowrap ${!activeTagFilter ? 'bg-brand text-white border-brand' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300'}`;
+            allBtn.textContent = 'All Tags';
+            allBtn.onclick = () => { activeTagFilter = null; renderQuickTags(); filterItems(); };
+            container.appendChild(allBtn);
+
+            allTags.forEach(tag => {
+                const tagBtn = document.createElement('button');
+                const isActive = activeTagFilter === tag;
+                tagBtn.className = `text-xs px-3 py-1.5 rounded-xl border transition whitespace-nowrap ${isActive ? 'bg-brand text-white border-brand' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300'}`;
+                tagBtn.textContent = `#${tag}`;
+                tagBtn.onclick = () => { activeTagFilter = isActive ? null : tag; renderQuickTags(); filterItems(); };
+                container.appendChild(tagBtn);
+            });
+        }
+
+        // Filtering Pipeline
+        function filterItems() {
+            const query = document.getElementById('search-input').value.toLowerCase();
+            const category = document.getElementById('filter-category').value;
+            const status = document.getElementById('filter-status').value;
+            const sortBy = document.getElementById('sort-select').value;
+
+            let result = itemsCache.filter(item => {
+                const matchesQuery = item.title.toLowerCase().includes(query) || 
+                                     (item.notes && item.notes.toLowerCase().includes(query)) ||
+                                     (item.tags && item.tags.some(t => t.toLowerCase().includes(query)));
+                const matchesCategory = category === 'all' || item.category === category;
+                const matchesStatus = status === 'all' || item.status === status;
+                const matchesFav = !onlyFavorites || item.isFavorite;
+                const matchesTag = !activeTagFilter || (item.tags && item.tags.includes(activeTagFilter));
+                return matchesQuery && matchesCategory && matchesStatus && matchesFav && matchesTag;
+            });
+
+            result.sort((a, b) => {
+                if (sortBy === 'newest') return new Date(b.createdAt) - new Date(a.createdAt);
+                if (sortBy === 'oldest') return new Date(a.createdAt) - new Date(b.createdAt);
+                if (sortBy === 'name') return a.title.localeCompare(b.title);
+                if (sortBy === 'size') return (b.size || 0) - (a.size || 0);
+            });
+
+            renderGrid(result);
+        }
+
+        function toggleFavoritesFilter() {
+            onlyFavorites = !onlyFavorites;
+            const btn = document.getElementById('fav-filter-btn');
+            btn.classList.toggle('text-amber-500', onlyFavorites);
+            btn.classList.toggle('bg-amber-50', onlyFavorites);
+            filterItems();
+        }
+
+        function setViewMode(mode) {
+            viewMode = mode;
+            document.getElementById('grid-view-btn').className = mode === 'grid' ? 'p-1.5 rounded-lg bg-white dark:bg-slate-700 text-brand shadow-sm transition' : 'p-1.5 rounded-lg text-slate-400 hover:text-slate-600 transition';
+            document.getElementById('list-view-btn').className = mode === 'list' ? 'p-1.5 rounded-lg bg-white dark:bg-slate-700 text-brand shadow-sm transition' : 'p-1.5 rounded-lg text-slate-400 hover:text-slate-600 transition';
+            filterItems();
+        }
+
+        // Render UI Cards
+        function renderGrid(items) {
+            const container = document.getElementById('items-container');
+            const emptyState = document.getElementById('empty-state');
+            container.innerHTML = '';
+
+            if (!items.length) {
+                emptyState.classList.remove('hidden');
+                return;
+            }
+            emptyState.classList.add('hidden');
+            container.className = viewMode === 'grid' ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6' : 'flex flex-col space-y-4';
+
+            items.forEach(item => {
+                const card = document.createElement('div');
+                card.className = "bg-white dark:bg-slate-900 p-5 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-800 flex flex-col justify-between hover:shadow-md transition group";
+                
+                const isImage = item.fileType && item.fileType.startsWith('image/');
+                const isPDF = item.fileType && item.fileType.includes('pdf');
+                const isText = item.fileType && (item.fileType.includes('text') || item.fileName?.endsWith('.txt') || item.fileName?.endsWith('.md'));
+
+                const statusColors = {
+                    'To Read': 'bg-rose-50 text-rose-600 dark:bg-rose-950/40 dark:text-rose-400',
+                    'In Progress': 'bg-amber-50 text-amber-600 dark:bg-amber-950/40 dark:text-amber-400',
+                    'Completed': 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400'
+                };
+
+                card.innerHTML = `
+                    <div>
+                        <div class="flex items-start justify-between mb-3">
+                            <div class="flex items-center space-x-2">
+                                <span class="px-2.5 py-1 bg-emerald-50 dark:bg-slate-800 text-brand text-xs font-medium rounded-lg">${item.category}</span>
+                                <select onchange="updateItemStatus(${item.id}, this.value)" class="text-[10px] px-2 py-0.5 rounded-md font-medium ${statusColors[item.status || 'To Read']} border-0 focus:ring-0 cursor-pointer">
+                                    <option value="To Read" ${item.status === 'To Read' ? 'selected' : ''}>To Read</option>
+                                    <option value="In Progress" ${item.status === 'In Progress' ? 'selected' : ''}>In Progress</option>
+                                    <option value="Completed" ${item.status === 'Completed' ? 'selected' : ''}>Completed</option>
+                                </select>
+                            </div>
+                            <div class="flex items-center space-x-1">
+                                <button onclick="toggleFavorite(${item.id})" class="p-1.5 text-slate-400 hover:text-amber-500 transition">
+                                    <svg class="w-5 h-5 ${item.isFavorite ? 'text-amber-500 fill-amber-500' : ''}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"></path></svg>
+                                </button>
+                                <button onclick="deleteItem(${item.id})" class="p-1.5 text-slate-400 hover:text-red-500 transition">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                </button>
+                            </div>
+                        </div>
+
+                        ${isImage ? `<div class="mb-3 h-40 rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-950 flex items-center justify-center cursor-pointer" onclick="openUniversalViewer(${item.id})"><img src="${item.data}" class="w-full h-full object-cover"></div>` : ''}
+
+                        <h4 class="font-bold text-base mb-1">${item.title}</h4>
+                        ${item.notes ? `<p class="text-xs text-slate-500 dark:text-slate-400 mb-3 line-clamp-2">${item.notes}</p>` : ''}
+
+                        ${item.tags && item.tags.length ? `
+                            <div class="flex flex-wrap gap-1 mb-4">
+                                ${item.tags.map(t => `<span class="text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-2 py-0.5 rounded-md">#${t}</span>`).join('')}
+                            </div>
+                        ` : ''}
+                    </div>
+
+                    <div class="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between mt-4">
+                        <span class="text-[11px] text-slate-400">${item.size ? formatBytes(item.size) : 'Cloud Resource'}</span>
+                        <div class="flex items-center space-x-2">
+                            ${(isText || isImage || isPDF) ? `<button onclick="openUniversalViewer(${item.id})" class="text-xs text-brand hover:underline font-medium">Preview</button>` : ''}
+                            ${item.type === 'link' ? `
+                                <a href="${item.url}" target="_blank" class="px-3 py-1.5 bg-brand hover:bg-brand-dark text-white rounded-xl text-xs font-medium transition">Visit Link</a>
+                            ` : `
+                                <a href="${item.data}" download="${item.fileName}" class="px-3 py-1.5 bg-brand hover:bg-brand-dark text-white rounded-xl text-xs font-medium transition">Download</a>
+                            `}
+                        </div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        // Preview Viewer Logic
+        function openUniversalViewer(id) {
+            const item = itemsCache.find(i => i.id === id);
+            if (!item) return;
+
+            document.getElementById('reader-title').textContent = item.title;
+            const txtEl = document.getElementById('reader-text');
+            const imgEl = document.getElementById('reader-image');
+            const frameEl = document.getElementById('reader-frame');
+
+            txtEl.classList.add('hidden');
+            imgEl.classList.add('hidden');
+            frameEl.classList.add('hidden');
+
+            if (item.fileType?.startsWith('image/')) {
+                imgEl.src = item.data;
+                imgEl.classList.remove('hidden');
+            } else if (item.fileType?.includes('pdf')) {
+                frameEl.src = item.data;
+                frameEl.classList.remove('hidden');
+            } else {
+                try {
+                    const base64 = item.data.split(',')[1];
+                    txtEl.textContent = decodeURIComponent(escape(window.atob(base64)));
+                    txtEl.classList.remove('hidden');
+                } catch (e) {
+                    txtEl.textContent = "Unable to decode text payload.";
+                    txtEl.classList.remove('hidden');
+                }
+            }
+            document.getElementById('reader-modal').classList.remove('hidden');
+        }
+
+        // Analytics Update
+        function updateStats() {
+            const total = itemsCache.length;
+            const favs = itemsCache.filter(i => i.isFavorite).length;
+            const links = itemsCache.filter(i => i.type === 'link').length;
+            const bytes = itemsCache.reduce((acc, curr) => acc + (curr.size || 0), 0);
+
+            document.getElementById('stat-total').textContent = total;
+            document.getElementById('stat-favs').textContent = favs;
+            document.getElementById('stat-links').textContent = links;
+            document.getElementById('stat-storage').textContent = formatBytes(bytes);
+        }
+
+        function formatBytes(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        // Backup & Restore
+        function exportData() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(itemsCache));
+            const a = document.createElement('a');
+            a.href = dataStr;
+            a.download = `digital_vault_export_${new Date().toISOString().slice(0,10)}.json`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+        }
+
+        function importData(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (evt) => {
+                try {
+                    const data = JSON.parse(evt.target.result);
+                    const tx = db.transaction(['vault'], 'readwrite');
+                    const store = tx.objectStore('vault');
+                    data.forEach(item => { delete item.id; store.add(item); });
+                    tx.oncomplete = () => { fetchVaultItems(); alert('Backup restored successfully'); };
+                } catch (err) {
+                    alert('Invalid JSON backup file.');
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        // Drag & Drop Handling
+        window.addEventListener('dragenter', (e) => { e.preventDefault(); document.getElementById('drop-overlay').classList.remove('hidden'); });
+        window.addEventListener('dragover', (e) => e.preventDefault());
+        window.addEventListener('dragleave', (e) => { if (e.clientX === 0 && e.clientY === 0) document.getElementById('drop-overlay').classList.add('hidden'); });
+        window.addEventListener('drop', (e) => {
+            e.preventDefault();
+            document.getElementById('drop-overlay').classList.add('hidden');
+            if (e.dataTransfer.files.length) {
+                const file = e.dataTransfer.files[0];
+                const reader = new FileReader();
+                reader.onload = (evt) => {
+                    persistItem({
+                        type: 'file',
+                        title: file.name,
+                        fileName: file.name,
+                        fileType: file.type,
+                        size: file.size,
+                        data: evt.target.result,
+                        category: 'Documents',
+                        status: 'To Read',
+                        tags: ['dropped'],
+                        notes: 'Quick archived via global drag and drop.',
+                        isFavorite: false,
+                        createdAt: new Date().toISOString()
+                    });
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+    </script>
+</body>
+</html>
